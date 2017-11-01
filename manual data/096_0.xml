@@ -1,0 +1,38 @@
+<annotation>
+	<folder>manual data</folder>
+	<filename>096_0.png</filename>
+	<path>/Users/tsekityam/Documents/GitHub/CarND-Capstone/manual data/096_0.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>800</width>
+		<height>600</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>red</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>706</xmin>
+			<ymin>560</ymin>
+			<xmax>718</xmax>
+			<ymax>592</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>red</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>768</xmin>
+			<ymin>561</ymin>
+			<xmax>780</xmax>
+			<ymax>591</ymax>
+		</bndbox>
+	</object>
+</annotation>
