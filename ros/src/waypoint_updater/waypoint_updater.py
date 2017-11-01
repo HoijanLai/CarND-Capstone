@@ -41,6 +41,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         # These are the map base waypoints
         self.base_waypoints = []
+        self.base_wp_size = 0
         self.traffic_waypoint = -1
         self.max_velocity = self.kmph2mps(rospy.get_param('~/waypoint_loader/velocity', 40.))
         self.pose_msg = None
@@ -68,6 +69,7 @@ class WaypointUpdater(object):
         # Store map waypoints in a class member
         # Assumption: base waypoints are published only once in the beginning of the simulation, so this callback runs only once.
         self.base_waypoints = waypoints.waypoints
+        self.base_wp_size = len(self.base_waypoints)
         rospy.loginfo('WaypointUpdater::waypoints_cb() - Base Waypoints loaded')
 
     def traffic_cb(self, msg):
@@ -152,12 +154,14 @@ class WaypointUpdater(object):
         closest_idx = self.find_closest_waypoint(msg)
         # TODO: closest_idx + LOOKAHEAD_WPS could go out of limit. Guard against it and handle that case!
         # Be carfull, waypoints is a copy of the *references* of base_waypoints. So, when we modify the objects inside waypoints (like the twist for each waypoint), we are also modifying base_waypoints objects!!
-        waypoints = self.base_waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+        plan_idx = LOOKAHEAD_WPS + closest_idx
+        end_idx = min(self.base_wp_size-1, plan_idx)
+        waypoints = self.base_waypoints[closest_idx:end_idx] + self.base_waypoints[:plan_idx - end_idx]
         
         # If there is a red light upcoming, reduce speed and stop at the stop line, else drive at max speed
         t2 = rospy.get_time()
         for i in range(LOOKAHEAD_WPS):
-            base_idx = i + closest_idx
+            base_idx = (i + closest_idx) % self.base_wp_size
             target_velocity = self.max_velocity
             
             is_red_light_within_waypoints = self.traffic_waypoint != -1 and self.traffic_waypoint < closest_idx + LOOKAHEAD_WPS and self.traffic_waypoint >= base_idx
