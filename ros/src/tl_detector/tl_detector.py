@@ -11,6 +11,7 @@ import tf
 import cv2
 import yaml
 import math
+from light_classification.tl_classifier import TLClassifier
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -55,6 +56,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        self.classifier = TLClassifier()
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -149,10 +151,6 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # TLClassifier takes a lot of time to initialize. Wait still (output RED) till it's ready
-        if self.light_classifier is None:
-            return TrafficLight.RED
-        
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -161,9 +159,8 @@ class TLDetector(object):
 
         #Get classification
         # TODO: when classification is ready, replace it with:
-        # return self.light_classifier.get_classification(cv_image)
-        test_state = self.light_classifier.get_classification(cv_image)
-        return light.state
+        return self.light_classifier.get_classification(cv_image)
+        # return light.state
         
     def get_stop_line_waypoints(self):
         # List of positions that correspond to the line to stop in front of for a given intersection
