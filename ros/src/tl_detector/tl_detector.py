@@ -158,6 +158,7 @@ class TLDetector(object):
         #Get classification
         # TODO: when classification is ready, replace it with:
         # return self.light_classifier.get_classification(cv_image)
+        test_state = self.light_classifier.get_classification(cv_image)
         return light.state
         
     def get_stop_line_waypoints(self):
