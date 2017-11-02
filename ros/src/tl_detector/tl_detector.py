@@ -149,6 +149,10 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # TLClassifier takes a lot of time to initialize. Wait still (output RED) till it's ready
+        if self.light_classifier is None:
+            return TrafficLight.RED
+        
         if(not self.has_image):
             self.prev_light_loc = None
             return False
