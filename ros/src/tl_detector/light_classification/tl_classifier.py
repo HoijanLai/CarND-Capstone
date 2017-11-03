@@ -4,7 +4,6 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from utils import label_map_util
 
 import rospy
 
@@ -31,10 +30,6 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
 
-        # Loading label map
-        label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
-        categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
-        self.category_index = label_map_util.create_category_index(categories)
         
         with self.detection_graph.as_default():
             with tf.Session(graph=self.detection_graph) as sess:
@@ -73,15 +68,20 @@ class TLClassifier(object):
                     [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
                     feed_dict={self.image_tensor: image_np_expanded})
   
-        state = TrafficLight.UNKNOWN
         # Assuming classes is always a sorted list, then the first element is always the biggest one
         # if we found that this does not stand, copy again peter's logic from his branch.
-        detected_class = classes[0][0]
-        detected_score = scores[0][0]
-        if detected_score > SCORE_THRESHOLD:
-            state = LABEL2STATE_MAP[detected_class]
-
+        state = self.get_state(scores, classes)
         dt = rospy.get_time() - t0
         rospy.loginfo("TLClassifier::get_classification() - Detection elapsed time: %f", dt)
         rospy.loginfo("TLClassifier::get_classification() - state: %d", state)
         return state
+    
+    def get_state(self, scores, classes, boxes=None):
+        scores_flat = scores.flatten()
+        max_score = np.max(scores_flat)
+        
+        if max_score < SCORE_THRESHOLD:
+            return TrafficLight.UNKNOWN
+        else:
+            label = classes.flatten()[np.argmax(scores_flat)]
+            return LABEL2STATE_MAP[label]
