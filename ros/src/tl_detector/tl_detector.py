@@ -151,19 +151,20 @@ class TLDetector(object):
         """
         # TLClassifier takes a lot of time to initialize. Wait still (output RED) till it's ready
         if self.light_classifier is None:
+            rospy.logwarn("TLDetector::get_light_state() - Classifier not ready!")
             return TrafficLight.RED
         
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         # TODO: when classification is ready, replace it with:
-        # return self.light_classifier.get_classification(cv_image)
-        test_state = self.light_classifier.get_classification(cv_image)
-        return light.state
+        state = self.light_classifier.get_classification(cv_image)
+        return state
+        # return light.state
         
     def get_stop_line_waypoints(self):
         # List of positions that correspond to the line to stop in front of for a given intersection

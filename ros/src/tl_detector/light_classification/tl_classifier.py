@@ -2,21 +2,16 @@ from styx_msgs.msg import TrafficLight
 
 import numpy as np
 import os
-import six.moves.urllib as urllib
-import sys
-import tarfile
 import tensorflow as tf
-import zipfile
-
-from collections import defaultdict
-from io import StringIO
-from matplotlib import pyplot as plt
-from PIL import Image
 
 from utils import label_map_util
-from utils import visualization_utils as vis_util
 
 import rospy
+
+SCORE_THRESHOLD = 0.5
+LABEL2STATE_MAP = {1: TrafficLight.RED,
+                   2: TrafficLight.YELLOW,
+                   3: TrafficLight.GREEN}
 
 class TLClassifier(object):
     def __init__(self):
@@ -40,11 +35,21 @@ class TLClassifier(object):
         label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
         categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
         self.category_index = label_map_util.create_category_index(categories)
-            
-    def load_image_into_numpy_array(self, image):
-        (im_width, im_height) = image.size
-        return np.array(image.getdata()).reshape(
-            (im_height, im_width, 3)).astype(np.uint8)
+        
+        with self.detection_graph.as_default():
+            with tf.Session(graph=self.detection_graph) as sess:
+                # Definite input and output Tensors for detection_graph
+                self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
+
+                # Each box represents a part of the image where a particular object was detected.
+                self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
+
+                # Each score represent how level of confidence for each of the objects.
+                # Score is shown on the result image, together with the class label.
+                self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
+                self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
+
+                self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -57,33 +62,26 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        with self.detection_graph.as_default():
-            with tf.Session(graph=self.detection_graph) as sess:
-                # Definite input and output Tensors for detection_graph
-                image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
-
-                # Each box represents a part of the image where a particular object was detected.
-                detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
-
-                # Each score represent how level of confidence for each of the objects.
-                # Score is shown on the result image, together with the class label.
-                detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
-                detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
-
-                num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
-   
+        t0 = rospy.get_time()
+        
         with self.detection_graph.as_default():
             with tf.Session(graph=self.detection_graph) as sess:    
-                # the array based representation of the image will be used later in order to prepare the
-                # result image with boxes and labels on it.
-                image_np = self.load_image_into_numpy_array(image)
                 # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-                image_np_expanded = np.expand_dims(image_np, axis=0)
+                image_np_expanded = np.expand_dims(image, axis=0)
                 # Actual detection.
                 (boxes, scores, classes, num) = sess.run(
-                    [detection_boxes, detection_scores, detection_classes, num_detections],
-                    feed_dict={image_tensor: image_np_expanded})
+                    [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+                    feed_dict={self.image_tensor: image_np_expanded})
   
-        
-        rospy.logerr(classes[0])
-        return TrafficLight.UNKNOWN
+        state = TrafficLight.UNKNOWN
+        # Assuming classes is always a sorted list, then the first element is always the biggest one
+        # if we found that this does not stand, copy again peter's logic from his branch.
+        detected_class = classes[0][0]
+        detected_score = scores[0][0]
+        if detected_score > SCORE_THRESHOLD:
+            state = LABEL2STATE_MAP[detected_class]
+
+        dt = rospy.get_time() - t0
+        rospy.loginfo("TLClassifier::get_classification() - Detection elapsed time: %f", dt)
+        rospy.loginfo("TLClassifier::get_classification() - state: %d", state)
+        return state
