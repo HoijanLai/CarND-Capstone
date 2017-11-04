@@ -4,7 +4,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 ![node-matter](./node-matter.png)
 
-##### Members
+### Members
 
 * Peter peterlai_0618@outlook.com (team lead)
 
@@ -12,6 +12,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 *
 
+
+
+---
 
 
 ### Native Installation
