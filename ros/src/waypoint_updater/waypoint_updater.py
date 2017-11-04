@@ -23,8 +23,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-REDUCE_VELOCITY_DISTANCE = 40 # [m]
-STOP_LINE_SAFE_DISTANCE = 3 # [m]
+REDUCE_VELOCITY_DISTANCE = 30 # [m]
+STOP_LINE_SAFE_DISTANCE = 2 # [m]
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -43,7 +43,7 @@ class WaypointUpdater(object):
         self.base_waypoints = []
         self.base_wp_size = 0
         self.traffic_waypoint = -1
-        self.max_velocity = self.kmph2mps(rospy.get_param('~/waypoint_loader/velocity', 40.))
+        self.max_velocity = self.kmph2mps(rospy.get_param('~/waypoint_loader/velocity', 50.))
         self.pose_msg = None
         
         # Fix the rate at which the algorithm is run: 10Hz

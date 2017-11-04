@@ -12,7 +12,8 @@ import cv2
 import yaml
 import math
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 2
+SKIP_COUNT = 5 
 
 class TLDetector(object):
     def __init__(self):
@@ -54,7 +55,8 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-
+        
+        self.sub3_count = 0
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -73,9 +75,15 @@ class TLDetector(object):
             of the waypoint closest to the red light's stop line to /traffic_waypoint
 
         Args:
-            msg (Image): image from car-mounted camera
+            osg (Image): image from car-mounted camera
 
         """
+        self.sub3_count += 1
+        if self.sub3_count <= SKIP_COUNT:
+            return
+        else:
+            self.sub3_count = 0
+    
         self.has_image = True
         self.camera_image = msg
         stop_line_wp, state = self.process_traffic_lights()
@@ -99,7 +107,8 @@ class TLDetector(object):
         self.state_count += 1
         
     # find the local coordinate with car as the origin
-    # Minor TODO: <Cleanup> Move this helper function to a library, because it is also used by the WaypointUpdater. Avoid duplicated code.
+    # Minor TODO: <Cleanup> Move this helper function to a library,
+    # because it is also used by the WaypointUpdater. Avoid duplicated code.
     def get_ego_local(self, pose):
         delta_x = pose.pose.position.x - self.pose.pose.position.x 
         delta_y = pose.pose.position.y - self.pose.pose.position.y 
@@ -112,7 +121,8 @@ class TLDetector(object):
         min_idx = -1
         min_dist = 10000
         for i, wp in enumerate(waypoints):
-            # if we want the are looking for the waypoint ahead, transform to local coordinates, else just use the specified pose
+            # if we want the are looking for the waypoint ahead, transform to local coordinates,
+            # else just use the specified pose
             x_local, y_local = -1, -1
             if use_ahead:
                 x_local, y_local = self.get_ego_local(wp.pose)
