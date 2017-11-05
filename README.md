@@ -6,12 +6,11 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 ### Members
 
-* Peter peterlai_0618@outlook.com (team lead)
+* Peter peterlai_0618@outlook.com (team lead [@HoijanLai](https://github.com/HoijanLai))
 
 * Sebastian L. Sampayo sebisampayo@gmail.com ([@sebastian-sampayo](https://github.com/sebastian-sampayo))
 
-*
-
+* Tse Kit Yam me@kytse.com ([@tsekityam](https://github.com/tsekityam))
 
 
 ---
