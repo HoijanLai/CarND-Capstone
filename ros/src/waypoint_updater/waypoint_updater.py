@@ -43,7 +43,7 @@ class WaypointUpdater(object):
         self.base_waypoints = []
         self.base_wp_size = 0
         self.traffic_waypoint = -1
-        self.max_velocity = self.kmph2mps(rospy.get_param('~/waypoint_loader/velocity', 50.))
+        self.max_velocity = self.kmph2mps(rospy.get_param('~/waypoint_loader/velocity', 20.))
         self.pose_msg = None
         
         # Fix the rate at which the algorithm is run: 10Hz
@@ -71,6 +71,7 @@ class WaypointUpdater(object):
         self.base_waypoints = waypoints.waypoints
         self.base_wp_size = len(self.base_waypoints)
         rospy.loginfo('WaypointUpdater::waypoints_cb() - Base Waypoints loaded')
+        rospy.loginfo('WaypointUpdater::waypoints_cb() - Base Waypoints has size %d'%self.base_wp_size)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -84,6 +85,8 @@ class WaypointUpdater(object):
         return waypoint.twist.twist.linear.x
 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+        if waypoint > len(waypoints) - 1:
+            rospy.logerr("%d waypoints but %d waypoint is requested"%(len(waypoints), waypoint)) 
         waypoints[waypoint].twist.twist.linear.x = velocity
 
 
@@ -150,14 +153,14 @@ class WaypointUpdater(object):
         """
         params: msg, PostStamped    
         """
-        # TODO: Design the actual logic for this function after implementing traffic and obstacle detection.
         closest_idx = self.find_closest_waypoint(msg)
-        # TODO: closest_idx + LOOKAHEAD_WPS could go out of limit. Guard against it and handle that case!
         # Be carfull, waypoints is a copy of the *references* of base_waypoints. So, when we modify the objects inside waypoints (like the twist for each waypoint), we are also modifying base_waypoints objects!!
         plan_idx = LOOKAHEAD_WPS + closest_idx
-        end_idx = min(self.base_wp_size-1, plan_idx)
-        waypoints = self.base_waypoints[closest_idx:end_idx] + self.base_waypoints[:plan_idx - end_idx]
-        
+        rep_times = -(-plan_idx/self.base_wp_size)
+        waypoints = (self.base_waypoints * rep_times)[closest_idx : plan_idx] 
+
+        rospy.loginfo("WaypointUpdater::calculate_final_waypoints() - %d to be published"%len(waypoints))
+
         # If there is a red light upcoming, reduce speed and stop at the stop line, else drive at max speed
         t2 = rospy.get_time()
         for i in range(LOOKAHEAD_WPS):
